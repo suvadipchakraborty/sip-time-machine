@@ -22,23 +22,24 @@ yrs.oninput = () => $('#yrsOut').textContent = yrs.value + (yrs.value == 1 ? ' y
 
 /* ---------- search + Direct/Regular pairing ---------- */
 const isGrowth = n => /growth/i.test(n) && !/idcw|dividend|bonus|payout|reinvest/i.test(n);
-const planOf = n => /direct/i.test(n) ? 'direct' : 'regular';
-const keyOf = n => n.toLowerCase().replace(/direct plan|regular plan|direct|regular|growth option|growth plan|growth|option|plan/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
-const cleanName = n => n.replace(/\s*-?\s*\(?(direct|regular)\s*plan\)?\s*-?\s*(growth( option| plan)?)?/i, '').replace(/\s*-\s*growth.*$/i, '').replace(/\s+-\s*$/, '').trim();
+const planOf = n => /direct|\bdir\b/i.test(n) ? 'direct' : 'regular';
+const keyOf = n => n.toLowerCase().replace(/\(?\b(direct|regular|dir|reg)\b\)?/g, '').replace(/\b(plan|option|growth)\b/g, '').replace(/[^a-z0-9]+/g, '');
+const cleanName = n => n.replace(/\s*-?\s*\(?(direct|regular)(\s*plan)?\)?\s*-?\s*(growth( option| plan)?)?/i, '').replace(/\s*-\s*growth.*$/i, '').replace(/\s+-\s*$/, '').trim();
 
-function pair(list) {
+function group(list) {
   const g = new Map();
   for (const f of list.filter(f => isGrowth(f.schemeName))) {
     const k = keyOf(f.schemeName);
-    const e = g.get(k) || { name: cleanName(f.schemeName) };
-    e[planOf(f.schemeName)] = f.schemeCode;
+    const e = g.get(k) || { name: cleanName(f.schemeName), key: k };
+    e[planOf(f.schemeName)] = e[planOf(f.schemeName)] || f.schemeCode;
     g.set(k, e);
   }
-  return [...g.values()].filter(e => e.direct && e.regular);
+  return [...g.values()].sort((a, b) => (!!(b.direct && b.regular)) - (!!(a.direct && a.regular)));
 }
 
+let seq = 0;
 $('#q').addEventListener('input', e => {
-  clearTimeout(timer); picked = null; $('#picked').hidden = true;
+  clearTimeout(timer); picked = null; $('#picked').hidden = true; seq++;
   const q = e.target.value.trim();
   if (q.length < 3) return showList(null);
   timer = setTimeout(() => search(q), 300);
@@ -46,22 +47,38 @@ $('#q').addEventListener('input', e => {
 document.addEventListener('click', e => { if (!e.target.closest('.search')) showList(null); });
 
 async function search(q) {
+  const my = ++seq;
   try {
     const r = await fetch(`${API}/search?q=${encodeURIComponent(q)}`);
     if (!r.ok) throw 0;
-    showList(pair(await r.json()));
-  } catch { showList([], 'Search failed. Check your connection and try again.'); }
+    const data = await r.json();
+    if (my === seq) showList(group(data));
+  } catch { if (my === seq) showList([], 'Search failed. Check your connection and try again.'); }
 }
 
 function showList(items, msg) {
   const ul = $('#results');
   ul.innerHTML = '';
   if (items === null) { ul.hidden = true; return; }
-  if (!items.length) ul.innerHTML = `<li class="none">${msg || 'No fund with both Direct and Regular growth plans found. Try fewer words.'}</li>`;
-  items.slice(0, 12).forEach(f => {
+  if (!items.length) ul.innerHTML = `<li class="none">${msg || 'No growth-plan funds found. Try a different spelling.'}</li>`;
+  items.slice(0, 15).forEach(f => {
     const li = document.createElement('li');
     li.textContent = f.name; li.tabIndex = 0; li.setAttribute('role', 'option');
-    const choose = () => { picked = f; $('#q').value = f.name; ul.hidden = true; const p = $('#picked'); p.textContent = 'Direct and Regular plans matched'; p.hidden = false; };
+    const choose = async () => {
+      picked = f; $('#q').value = f.name; ul.hidden = true; seq++;
+      const p = $('#picked'); p.hidden = false; p.style.color = ''; p.textContent = 'Matching Direct and Regular plans...';
+      if (!(f.direct && f.regular)) { // counterpart missing from the search results: look it up by full name
+        try {
+          const r = await fetch(`${API}/search?q=${encodeURIComponent(f.name)}`);
+          const m = group(await r.json()).find(g => g.key === f.key);
+          if (m) { f.direct = f.direct || m.direct; f.regular = f.regular || m.regular; }
+        } catch { /* handled below */ }
+      }
+      if (picked !== f) return;
+      const both = f.direct && f.regular;
+      p.style.color = both ? '' : 'var(--red)';
+      p.textContent = both ? 'Direct and Regular plans matched' : `Only the ${f.direct ? 'Direct' : 'Regular'} plan was found, so the commission comparison is not available for this fund.`;
+    };
     li.onclick = choose; li.onkeydown = e => e.key === 'Enter' && choose();
     ul.appendChild(li);
   });
@@ -101,6 +118,7 @@ $('#go').onclick = async () => {
   const sip = +amt.value, years = +yrs.value, err = $('#err');
   err.hidden = true;
   if (!picked) return fail('Search and pick a fund first.');
+  if (!picked.direct || !picked.regular) return fail('Pick a fund that has both a Direct and a Regular plan.');
   if (!(sip >= 500)) return fail('Enter a monthly amount of at least ₹500.');
   warp(true, years);
   try {
