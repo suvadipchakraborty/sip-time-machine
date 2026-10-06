@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SIP Time Machine – See what your SIP became</title>
+<meta name="description" content="Travel back in time to see the real compounding power of your investments. Direct vs Regular plan, benchmarked against a 7% RD.">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SIP Time Machine">
+<meta property="og:title" content="SIP Time Machine – See what your SIP became">
+<meta property="og:description" content="Travel back in time to see the real compounding power of your investments, and the wealth lost to commissions.">
+<meta property="og:url" content="https://sip-time-machine.suvadipchakraborty.workers.dev/">
+<meta property="og:image" content="https://sip-time-machine.suvadipchakraborty.workers.dev/preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SIP Time Machine">
+<meta name="twitter:description" content="What would your monthly SIP be worth today? Direct vs Regular vs a 7% RD.">
+<meta name="twitter:image" content="https://sip-time-machine.suvadipchakraborty.workers.dev/preview.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="grid" aria-hidden="true"></div>
+<header class="top"><span class="logo">SIP Time Machine</span></header>
+
+<main>
+<section id="tab-machine" class="tab">
+  <h1>What did your SIP turn into?</h1>
+  <p class="lede">Pick a fund, set your monthly amount, and dial back the years.</p>
+
+  <div class="panel">
+    <label for="q">Mutual fund</label>
+    <div class="search">
+      <input id="q" type="search" placeholder="e.g. Parag Parikh Flexi Cap" autocomplete="off" aria-controls="results" aria-expanded="false">
+      <ul id="results" role="listbox" hidden></ul>
+    </div>
+    <p id="picked" class="picked" hidden></p>
+
+    <label for="amt">Monthly investment</label>
+    <div class="amt-row">
+      <span class="rupee">₹</span><input id="amt" type="number" inputmode="numeric" min="500" max="500000" step="500" value="10000">
+    </div>
+    <input id="amtRange" type="range" min="500" max="100000" step="500" value="10000" aria-label="Monthly investment slider">
+
+    <label for="yrs">Time dial</label>
+    <div class="dial"><output id="yrsOut">10 years</output></div>
+    <input id="yrs" type="range" min="1" max="15" step="1" value="10">
+
+    <button id="go" class="reactor">Travel through time</button>
+    <p id="err" class="err" role="alert" hidden></p>
+  </div>
+
+  <section id="out" hidden aria-live="polite">
+    <div class="panel hero">
+      <p class="small" id="fundName"></p>
+      <h2 id="headline"></h2>
+      <p class="small" id="note"></p>
+    </div>
+
+    <div class="panel leak">
+      <p class="leak-label">Wealth Lost to Commissions</p>
+      <p class="leak-num" id="leak"></p>
+      <p class="small" id="leakSub"></p>
+      <div class="meter"><i id="meterFill"></i></div>
+      <p class="small">Regular plan: <b id="regVal"></b> &nbsp;|&nbsp; Direct plan: <b id="dirVal"></b></p>
+    </div>
+
+    <div class="panel">
+      <h3>Where the money would be</h3>
+      <div id="bars" class="bars"></div>
+    </div>
+
+    <button id="share" class="ghost">Share my result</button>
+  </section>
+</section>
+
+<section id="tab-about" class="tab" hidden>
+  <h1>SIP Time Machine</h1>
+  <p class="lede">Travel back in time to see the real compounding power of your investments.</p>
+  <div class="panel">
+    <h3>Features</h3>
+    <ul class="list"><li>Live historical NAV tracking</li><li>Direct vs. Regular plan fee drag visualization</li><li>Fixed-income benchmarking against a 7% recurring deposit</li></ul>
+    <h3>Benefits</h3>
+    <p>Helps you visualize the massive long-term impact of invisible broker commissions and the equity risk premium.</p>
+    <h3>How it's calculated</h3>
+    <p>On the 1st of each month (or the next trading day) your SIP buys units at that day's NAV. Today's value is total units times the latest NAV. The RD benchmark compounds quarterly at 7% a year.</p>
+  </div>
+  <div class="panel">
+    <button id="install" class="reactor small-btn">Save app</button>
+    <p id="installHint" class="small"></p>
+  </div>
+  <p class="disclaimer">Mutual fund investments are subject to market risks. Past performance is not indicative of future returns. Built for educational purposes.</p>
+</section>
+</main>
+
+<div id="warp" hidden aria-hidden="true"><div class="ring"></div><div class="ring r2"></div><p id="warpText">Rewinding…</p></div>
+
+<nav class="bottom">
+  <button data-tab="machine" class="on">⏱️ Time Machine</button>
+  <button data-tab="about">ℹ️ About</button>
+</nav>
+<script src="app.js"></script>
+</body>
+</html>
